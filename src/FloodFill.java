@@ -1,7 +1,12 @@
 import java.awt.image.BufferedImage;
 import java.io.File;
+import javax.imageio.ImageIO;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class FloodFill {
+
+    //A imagem que vai ser modificada, o boolean marca quais pixels já foram processados, LArgura e altura da imagem
     private BufferedImage image;
     private boolean[][] visited;
     private int width, height;
@@ -13,66 +18,56 @@ public class FloodFill {
         this.visited = new boolean[width][height];
     }
 
-    public void fillFrom(int startX, int startY, FillStructure structure, int saveStep) throws Exception {
+    public void fill(int startX, int startY, int newColor, FillStructure structure) throws Exception {
+
+        //Se o ponto inicial estiver fora da imagem ele sai do método
+        if (startX < 0 || startY < 0 || startX >= width || startY >= height) return;
+        int targetColor = image.getRGB(startX, startY);
+        if (targetColor == newColor) return;
+
+        //cria a pasta frames
+        Files.createDirectories(Paths.get("frames"));
+
+        //adiciona o ponto inical a pilha ou fila
         structure.add(new int[]{startX, startY});
-        int step = 0;
+        int steps = 0;
+
+        //Define limite de frames e pixels
+        int maxFrames = 50;
+        int saveEvery = Math.max(1, width * height / maxFrames);
 
         while (!structure.isEmpty()) {
-            int[] actualPoint = structure.remove();
+            int[] p = structure.remove();
+            if (p == null) continue;
+            int x = p[0], y = p[1];
 
-            if (pixelIsValid(actualPoint)) {
-                visited[actualPoint[0]][actualPoint[1]] = true;
-                fillPixel(actualPoint);
-                addNeighbors(actualPoint, structure);
+            //ignora pixels fora da imagem
+            if (x < 0 || y < 0 || x >= width || y >= height) continue;
+            if (visited[x][y]) continue;
+
+            int currentColor = image.getRGB(x, y);
+            if (currentColor != targetColor) continue;
+
+            // sempre pinta o pixel
+            image.setRGB(x, y, newColor);
+            visited[x][y] = true;
+            steps++;
+
+            // só salva frames intermediários
+            if (steps % saveEvery == 0) {
+                String fname = String.format("frames/frame_%06d.png", steps);
+                ImageIO.write(image, "png", new File(fname));
             }
 
-            if (step % saveStep == 0) {
-                saveFrame(step / saveStep);
-            }
-
-            step++;
+            //espalha a cor pelos pontos
+            structure.add(new int[]{x+1, y});
+            structure.add(new int[]{x-1, y});
+            structure.add(new int[]{x, y+1});
+            structure.add(new int[]{x, y-1});
         }
 
-        saveFinalImage();
-    }
-
-    private boolean pixelIsValid(int[] point) {
-        int x = point[0];
-        int y = point[1];
-
-        if (x < 0 || x >= width || y < 0 || y >= height) return false;
-        if (visited[x][y]) return false;
-
-        int rgb = image.getRGB(x, y);
-        return rgb != 0xFF000000 && rgb != 0xFF800080;
-    }
-
-    private void addNeighbors(int[] point, FillStructure structure) {
-        int x = point[0];
-        int y = point[1];
-
-        int[][] neighbors = {
-                {x + 1, y}, {x - 1, y},
-                {x, y + 1}, {x, y - 1}
-        };
-
-        for (int[] n : neighbors) {
-            if (pixelIsValid(n)) structure.add(n);
-        }
-    }
-
-    private void fillPixel(int[] point) {
-        image.setRGB(point[0], point[1], 0xFF800080);
-    }
-
-    private void saveFrame(int step) throws Exception {
-        File outputFile = new File("/Users/pedro/Documents/GitHub/FloodFillAlgorithm/src/frames/frame_" + step + ".png");
-        javax.imageio.ImageIO.write(image, "png", outputFile);
-    }
-
-    private void saveFinalImage() throws Exception {
-        File finalOutput = new File("/Users/pedro/Documents/GitHub/FloodFillAlgorithm/src/frames/frame_final.png");
-        javax.imageio.ImageIO.write(image, "png", finalOutput);
-        System.out.println("Imagem final salva!");
+        // salva o último frame da pasta frames
+        String finalFrame = "frames/frame_final.png";
+        ImageIO.write(image, "png", new File(finalFrame));
     }
 }
