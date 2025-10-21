@@ -20,9 +20,9 @@ public class FloodFill {
 
     public void fill(int startX, int startY, int newColor, FillStructure structure) throws Exception {
 
-        //Se o ponto inicial estiver fora da imagem ele sai do método
+        //Se o ponto inicial estiver fora da imagem ele sai do metodo
         if (startX < 0 || startY < 0 || startX >= width || startY >= height) return;
-        int targetColor = image.getRGB(startX, startY);
+        int targetColor = image.getRGB(startX, startY); // define a cor a ser pintada da imagem!
         if (targetColor == newColor) return;
 
         //cria a pasta frames
@@ -38,11 +38,11 @@ public class FloodFill {
 
         while (!structure.isEmpty()) {
             int[] p = structure.remove();
-            if (p == null) continue;
+            if (p == null) continue; // evita o NullPointerException
             int x = p[0], y = p[1];
 
             //ignora pixels fora da imagem
-            if (x < 0 || y < 0 || x >= width || y >= height) continue;
+            if (x < 0 || y < 0 || x >= width || y >= height) continue; // passa para o proximo da estrutura
             if (visited[x][y]) continue;
 
             int currentColor = image.getRGB(x, y);
@@ -59,7 +59,7 @@ public class FloodFill {
                 ImageIO.write(image, "png", new File(fname));
             }
 
-            //espalha a cor pelos pontos
+            // Adiciona os pixels vizinhos a estrutura
             structure.add(new int[]{x+1, y});
             structure.add(new int[]{x-1, y});
             structure.add(new int[]{x, y+1});
